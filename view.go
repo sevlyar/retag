@@ -6,16 +6,16 @@ import (
 	"strings"
 )
 
-func NewView(tag, name string) View {
-	return View{name, tag}
+func NewView(tag, name string) TagMaker {
+	return tagView{name, tag}
 }
 
-type View struct {
+type tagView struct {
 	name string
 	tag  string
 }
 
-func (v View) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
+func (v tagView) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
 	field := t.Field(fieldIndex)
 	if v.isMatch(field.Tag.Get("view")) {
 		defaultValue := field.Tag.Get(v.tag)
@@ -27,24 +27,24 @@ func (v View) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
 	return reflect.StructTag(v.tag + `:"-"`)
 }
 
-func (v View) isMatch(tag string) bool {
+func (v tagView) isMatch(tag string) bool {
 	if tag == "*" {
 		return true
 	}
-	list := ParseStringList(tag)
-	if list.Contains(v.name) {
+	list := parseStringList(tag)
+	if list.contains(v.name) {
 		return true
 	}
 	return false
 }
 
-func ParseStringList(list string) StringList {
+func parseStringList(list string) stringList {
 	return strings.Split(list, ",")
 }
 
-type StringList []string
+type stringList []string
 
-func (l StringList) Contains(s string) bool {
+func (l stringList) contains(s string) bool {
 	for _, i := range l {
 		if i == s {
 			return true
