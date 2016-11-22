@@ -92,6 +92,16 @@ func TestConvert(test *testing.T) {
 	for _, testCase := range mapTestCases {
 		test.Run(testCase.Name, testCase.Run)
 	}
+	test.Run("Unsupported", func(test *testing.T) {
+		defer shouldPanic(test)
+		Convert(new(struct{ I interface{} }), maker{})
+	})
+}
+
+func shouldPanic(test *testing.T) {
+	if p := recover(); p == nil {
+		test.Fatal("It should panic")
+	}
 }
 
 func BenchmarkConvert(b *testing.B) {

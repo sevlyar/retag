@@ -1,7 +1,7 @@
 package retag
 
 import (
-	"fmt"
+	// "fmt"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -94,14 +94,14 @@ func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 	newType := reflect.StructOf(fields)
 	if structType.Size() != newType.Size() {
 		// TODO: debug
-		fmt.Println(newType.Size(), newType)
-		for i := 0; i < newType.NumField(); i++ {
-			fmt.Println(newType.Field(i))
-		}
-		fmt.Println(structType.Size(), structType)
-		for i := 0; i < structType.NumField(); i++ {
-			fmt.Println(structType.Field(i))
-		}
+		// fmt.Println(newType.Size(), newType)
+		// for i := 0; i < newType.NumField(); i++ {
+		// 	fmt.Println(newType.Field(i))
+		// }
+		// fmt.Println(structType.Size(), structType)
+		// for i := 0; i < structType.NumField(); i++ {
+		// 	fmt.Println(structType.Field(i))
+		// }
 		panic("tags.Map: Unexpected case - type has a size different from size of original type")
 	}
 	return newType
