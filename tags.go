@@ -46,31 +46,41 @@ func getType(structType reflect.Type, maker TagMaker) reflect.Type {
 	return t
 }
 
-func makeType(structType reflect.Type, maker TagMaker) reflect.Type {
+// TODO: optimize cases when type is not modified
+func makeType(t reflect.Type, maker TagMaker) reflect.Type {
+	switch t.Kind() {
+	case reflect.Struct:
+		return makeStructType(t, maker)
+	case reflect.Ptr:
+		return reflect.PtrTo(getType(t.Elem(), maker))
+	case reflect.Array:
+		return reflect.ArrayOf(t.Len(), getType(t.Elem(), maker))
+	case reflect.Slice:
+		return reflect.SliceOf(getType(t.Elem(), maker))
+	case reflect.Map:
+		return reflect.MapOf(getType(t.Key(), maker), getType(t.Elem(), maker))
+	case
+		reflect.Chan,
+		reflect.Func,
+		reflect.UnsafePointer,
+		reflect.Interface:
+		panic("tags.Map: Unsupported type: " + t.Kind().String())
+	default:
+		// don't modify type in another case
+		return t
+	}
+}
+
+func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 	if structType.NumField() == 0 {
 		return structType
 	}
+
 	fields := make([]reflect.StructField, 0, structType.NumField())
 	for i := 0; i < structType.NumField(); i++ {
 		strField := structType.Field(i)
 		if isExported(strField.Name) {
-			switch strField.Type.Kind() {
-			case reflect.Struct:
-				strField.Type = getType(strField.Type, maker)
-			case reflect.Ptr:
-				strField.Type = reflect.PtrTo(getType(strField.Type.Elem(), maker))
-			case
-				reflect.Chan,
-				reflect.Func,
-				reflect.UnsafePointer,
-				// TODO: add support of the next types:
-				reflect.Array,
-				reflect.Slice,
-				reflect.Map,
-				reflect.Interface:
-				panic("tags.Map: Unsupported type: " + strField.Type.Kind().String())
-			}
-			// don't modify type in another case
+			strField.Type = getType(strField.Type, maker)
 		} else {
 			// strange case with anonymous fields
 			strField.PkgPath = ""
