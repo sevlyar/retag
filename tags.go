@@ -121,7 +121,7 @@ func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 	}
 
 	newType := reflect.StructOf(fields)
-	compareStructTypes(structType, result)
+	compareStructTypes(structType, newType)
 	return newType
 }
 
