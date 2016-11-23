@@ -6,6 +6,23 @@ import (
 	"strings"
 )
 
+// NewView creates TagMaker which makes tags by the next rules:
+//   - If field's tag contains value with key 'view' and the value matches with
+//     value passed in the name parameter, it returns the key passed in the tag parameter
+//     and its value (if presented) from field's tag or empty string;
+//   - Tag `<tag>:"-"` will be returned in another cases.
+//
+// Section view may contain comma-separated list of views or '*'. '*' matches any view.
+//
+// Examples for NewView("json", "admin"):
+//   ``                  -> `json:"-"`
+//   `view:"user"`       -> `json:"-"`
+//   `view:"*"`          -> ``
+//   `view:"admin"`      -> ``
+//   `view:"user,admin"` -> ``
+//   `view:"admin" json:"Name,omitempty"` -> `json:"Name,omitempty"`
+//
+// See package examples additionally.
 func NewView(tag, name string) TagMaker {
 	return tagView{name, tag}
 }

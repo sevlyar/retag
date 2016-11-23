@@ -192,3 +192,39 @@ func _TestSizeOf(test *testing.T) {
 // 		{Name: "b", Type: reflect.TypeOf("")},
 // 	})
 // }
+
+func Example_viewOfData() {
+	type UserProfile struct {
+		Id          int64
+		Name        string `view:"*"`
+		CardNumber  string `view:"user"`
+		SupportNote string `view:"support"`
+	}
+	profile := &UserProfile{
+		Id:          7,
+		Name:        "Duke Nukem",
+		CardNumber:  "4378 0990 7823 1019",
+		SupportNote: "Strange customer",
+	}
+
+	userView := Convert(profile, NewView("json", "user"))
+	supportView := Convert(profile, NewView("json", "support"))
+
+	// Now profile, userView and supportView point
+	// on the same memory but have different types
+	// with different tags.
+
+	b, _ := json.MarshalIndent(userView, "", "  ")
+	fmt.Println(string(b))
+	b, _ = json.MarshalIndent(supportView, "", "  ")
+	fmt.Println(string(b))
+	// Output:
+	// {
+	//   "Name": "Duke Nukem",
+	//   "CardNumber": "4378 0990 7823 1019"
+	// }
+	// {
+	//   "Name": "Duke Nukem",
+	//   "SupportNote": "Strange customer"
+	// }
+}
