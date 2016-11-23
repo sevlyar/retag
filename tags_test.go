@@ -61,7 +61,8 @@ type ComplexStruct struct {
 var mapTestCases = []MapTestCase{
 	{"Void", maker{}, new(VoidStruct), `{}`},
 	{"Flat", maker{}, new(FlatStruct), `{"Xport":0}`},
-	// {"AnonymousVoidStruct", maker{}, new(AnonymousVoidStruct), `{"Xport":0}`}, // strange error
+	// Bug for final zero-size field, see https://github.com/golang/go/issues/18016
+	// {"AnonymousVoidStruct", maker{}, new(AnonymousVoidStruct), `{"Xport":0}`},
 	{"Struct", maker{}, new(Struct), `{"Xport1":0,"Xport2":{"Xport":0}}`},
 	{"Ptr", maker{}, new(PtrStruct), `{"Xport1":0,"Xport2":null}`},
 	{"Slice", maker{}, new(SliceStruct), `{"XportSlice":null,"XportArray":[{"Xport":0},{"Xport":0}]}`},

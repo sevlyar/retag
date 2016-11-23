@@ -39,6 +39,9 @@ type TagMaker interface {
 // Convert doesn't support any interfaces, functions, chan and unsafe pointers.
 // Interfaces is not supported because they requires memory-copy operations in most cases.
 // Passing structures that contains unsupported types to Convert will result in a panic.
+//
+// BUG(yar): Convert panics on structure with a final zero-size field in go1.7.
+// It is fixed in go1.8 (see https://github.com/golang/go/issues/18016).
 func Convert(p interface{}, maker TagMaker) interface{} {
 	strPtrVal := reflect.ValueOf(p)
 	// TODO(yar): check type (pointer to the structure)

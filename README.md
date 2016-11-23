@@ -9,7 +9,8 @@ without copying of the data. It may be helpful in next cases:
 when application has layers of abstractions and model is
 separated from storages and presentation layers.
 
-This package is still experimental and subject to change.
+The package requires go1.7+.
+The package is still experimental and subject to change.
 
 ## Installation
 
