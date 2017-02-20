@@ -10,7 +10,7 @@ import (
 //   - If field's tag contains value with key 'view' and the value matches with
 //     value passed in the 'name' parameter, the maker returns the key passed in the 'tag' parameter
 //     with its value (if presented) from field's tag or empty string;
-//	 - If field's tag contains value with key 'view' and the value doesn't match with
+//   - If field's tag contains value with key 'view' and the value doesn't match with
 //     value passed in the 'name' parameter, the maker returns `<tag>:"-"`;
 //   - If field's tag doesn't contain 'view' section, the maker returns value of the original tag.
 //
