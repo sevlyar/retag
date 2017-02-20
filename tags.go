@@ -3,6 +3,7 @@ package retag
 import (
 	// "fmt"
 	"reflect"
+	"runtime"
 	"sync"
 	"unsafe"
 )
@@ -114,10 +115,12 @@ func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 		if isExported(strField.Name) {
 			strField.Type = getType(strField.Type, maker)
 		} else {
-			// reflect.StructOf works with private fields and anonymous fields incorrect.
-			// TODO(yar): Make bugreport and fix this hack when StructOf will be fixed.
-			strField.PkgPath = ""
-			strField.Name = ""
+			if !structTypeConstructorBugWasFixed {
+				// reflect.StructOf works with private fields and anonymous fields incorrect.
+				// see issue https://github.com/golang/go/issues/17766
+				strField.PkgPath = ""
+				strField.Name = ""
+			}
 		}
 		strField.Tag = maker.MakeTag(structType, i)
 		fields = append(fields, strField)
@@ -145,5 +148,16 @@ func compareStructTypes(source, result reflect.Type) {
 		// 	fmt.Println(structType.Field(i))
 		// }
 		panic("tags.Map: Unexpected case - type has a size different from size of original type")
+	}
+}
+
+var structTypeConstructorBugWasFixed bool
+
+func init() {
+	switch runtime.Version() {
+	case "go1.7", "go1.8":
+		// there is bug in reflect.StructOf
+	default:
+		structTypeConstructorBugWasFixed = true
 	}
 }
