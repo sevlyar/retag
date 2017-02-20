@@ -107,8 +107,16 @@ func shouldPanic(test *testing.T) {
 	}
 }
 
+var pn *ComplexStruct
+
 func BenchmarkConvert(b *testing.B) {
 	p := new(ComplexStruct)
+	b.Run("New", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			// Memory allocation for the reference of speed
+			pn = new(ComplexStruct)
+		}
+	})
 	b.Run("Cached", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			Convert(p, maker{})

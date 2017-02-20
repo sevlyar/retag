@@ -1,6 +1,6 @@
 # Retag [![TravisCI](https://api.travis-ci.org/sevlyar/retag.svg)](https://travis-ci.org/sevlyar/retag) [![GoDoc](https://godoc.org/github.com/sevlyar/retag?status.svg)](https://godoc.org/github.com/sevlyar/retag)
 
-Package retag provides ability to change tags of structures' fields in runtime
+Package retag provides an ability to change tags of structures' fields in runtime
 without copying of the data. It may be helpful in next cases:
 
 * Automatic tags generation;
