@@ -1,10 +1,12 @@
 package retag
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
+	"unicode"
 	"unsafe"
 )
 
@@ -196,7 +198,7 @@ func _TestSizeOf(test *testing.T) {
 
 func Example_viewOfData() {
 	type UserProfile struct {
-		Id          int64
+		Id          int64  `view:"-"`
 		Name        string `view:"*"`
 		CardNumber  string `view:"user"`
 		SupportNote string `view:"support"`
@@ -227,5 +229,58 @@ func Example_viewOfData() {
 	// {
 	//   "Name": "Duke Nukem",
 	//   "SupportNote": "Strange customer"
+	// }
+}
+
+type Snaker string
+
+func (s Snaker) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
+	key := string(s)
+	field := t.Field(fieldIndex)
+	value := field.Tag.Get(key)
+	if value == "" {
+		value = CamelToSnake(field.Name)
+	}
+	tag := fmt.Sprintf(`%s:"%s"`, key, value)
+	return reflect.StructTag(tag)
+}
+
+func CamelToSnake(src string) string {
+	// Dumb implementation
+	var b bytes.Buffer
+	for i, r := range src {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			r = unicode.ToLower(r)
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func Example_snaker() {
+	type UserProfile struct {
+		Id          int64 `json:"_id"`
+		Name        string
+		CardNumber  string
+		SupportNote string
+	}
+	profile := &UserProfile{
+		Id:          7,
+		Name:        "Duke Nukem",
+		CardNumber:  "4378 0990 7823 1019",
+		SupportNote: "Strange customer",
+	}
+	userView := Convert(profile, Snaker("json"))
+	b, _ := json.MarshalIndent(userView, "", "  ")
+	fmt.Println(string(b))
+	// Output:
+	// {
+	//   "_id": 7,
+	//   "name": "Duke Nukem",
+	//   "card_number": "4378 0990 7823 1019",
+	//   "support_note": "Strange customer"
 	// }
 }
