@@ -6,16 +6,20 @@ import (
 	"strings"
 )
 
-// NewView creates TagMaker which makes tags by the next rules:
+// NewView creates TagMaker which makes tag for structure's field by the next rules:
 //   - If field's tag contains value with key 'view' and the value matches with
-//     value passed in the name parameter, it returns the key passed in the tag parameter
-//     and its value (if presented) from field's tag or empty string;
-//   - Tag `<tag>:"-"` will be returned in another cases.
+//     value passed in the 'name' parameter, the maker returns the key passed in the 'tag' parameter
+//     with its value (if presented) from field's tag or empty string;
+//	 - If field's tag contains value with key 'view' and the value doesn't match with
+//     value passed in the 'name' parameter, the maker returns `<tag>:"-"`;
+//   - If field's tag doesn't contain 'view' section, the maker returns value of the original tag.
 //
 // Section view may contain comma-separated list of views or '*'. '*' matches any view.
 //
 // Examples for NewView("json", "admin"):
-//   ``                  -> `json:"-"`
+//   ``                  -> ``
+//   `xml:"name"`        -> `xml:"name"`
+//   `view:"-"`          -> `json:"-"`
 //   `view:"user"`       -> `json:"-"`
 //   `view:"*"`          -> ``
 //   `view:"admin"`      -> ``
@@ -33,8 +37,13 @@ type tagView struct {
 }
 
 func (v tagView) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
+	const key = "view"
 	field := t.Field(fieldIndex)
-	if v.isMatch(field.Tag.Get("view")) {
+	value := field.Tag.Get(key)
+	if value == "" {
+		return field.Tag
+	}
+	if v.isMatch(value) {
 		defaultValue := field.Tag.Get(v.tag)
 		if defaultValue != "" {
 			defaultValue = fmt.Sprintf(`%s:"%s"`, v.tag, defaultValue)

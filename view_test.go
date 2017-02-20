@@ -9,7 +9,9 @@ var (
 	testView             = NewView("json", "admin")
 	viewMakeTagTestCases = []ViewMakeTagTestCase{
 		{"Void",
-			``, `json:"-"`},
+			``, ``},
+		{"VoidExt",
+		 `xml:"name"`, `xml:"name"`},
 		{"Miss",
 			`view:"user"`, `json:"-"`},
 		{"Hit",

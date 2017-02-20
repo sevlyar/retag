@@ -1,4 +1,4 @@
-// Package retag provides ability to change tags of structures' fields in runtime
+// Package retag provides an ability to change tags of structures' fields in runtime
 // without copying of the data. It may be helpful in next cases:
 //
 //  - Automatic tags generation;
