@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 	"unicode"
 	"unsafe"
 )
@@ -22,9 +23,8 @@ func (m maker) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
 type VoidStruct struct{}
 
 type FlatStruct struct {
-	private string
-	Omit    int
-	Xport   int
+	Omit  int
+	Xport int
 }
 
 type AnonymousVoidStruct struct {
@@ -60,6 +60,10 @@ type ComplexStruct struct {
 	XportMap    map[string]*FlatStruct
 }
 
+type PrivateFieldsStruct struct {
+	XportTime time.Time
+}
+
 var mapTestCases = []MapTestCase{
 	{"Void", maker{}, new(VoidStruct), `{}`},
 	{"Flat", maker{}, new(FlatStruct), `{"Xport":0}`},
@@ -70,6 +74,7 @@ var mapTestCases = []MapTestCase{
 	{"Slice", maker{}, new(SliceStruct), `{"XportSlice":null,"XportArray":[{"Xport":0},{"Xport":0}]}`},
 	{"Map", maker{}, &MapStruct{XportMap: map[string]*FlatStruct{"A": {Xport: 1}, "B": {Xport: 2}}},
 		`{"XportMap":{"A":{"Xport":1},"B":{"Xport":2}}}`},
+	{"UnchangedUnexported", maker{}, new(PrivateFieldsStruct), `{"XportTime":"0001-01-01T00:00:00Z"}`},
 }
 
 type MapTestCase struct {
@@ -98,6 +103,13 @@ func TestConvert(test *testing.T) {
 	test.Run("Unsupported", func(test *testing.T) {
 		defer shouldPanic(test)
 		Convert(new(struct{ I interface{} }), maker{})
+	})
+	test.Run("ChangedWithUnexported", func(test *testing.T) {
+		defer shouldPanic(test)
+		Convert(new(struct {
+			private int
+			Omit    int
+		}), maker{})
 	})
 }
 

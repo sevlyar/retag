@@ -3,6 +3,7 @@ package retag
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
@@ -11,7 +12,7 @@ var (
 		{"Void",
 			``, ``},
 		{"VoidExt",
-		 `xml:"name"`, `xml:"name"`},
+			`xml:"name"`, `xml:"name"`},
 		{"Miss",
 			`view:"user"`, `json:"-"`},
 		{"Hit",
@@ -59,4 +60,15 @@ type viewTestStruct struct{}
 func TestView(test *testing.T) {
 	// TODO: complete test
 	Convert(new(viewTestStruct), NewView("json", "admin"))
+}
+
+func TestView2(test *testing.T) {
+	type Product struct {
+		time.Time `view:"gorm"`
+		Code      string `view:"*"`
+		Price     uint   `view:"*"`
+	}
+	product := &Product{}
+	gormProduct := Convert(product, NewView("json", "gorm"))
+	test.Log(gormProduct, reflect.TypeOf(gormProduct))
 }
