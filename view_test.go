@@ -64,9 +64,9 @@ func TestView(test *testing.T) {
 
 func TestView2(test *testing.T) {
 	type Product struct {
-		time.Time `view:"gorm"`
-		Code      string `view:"*"`
-		Price     uint   `view:"*"`
+		T     time.Time `view:"gorm"`
+		Code  string    `view:"*"`
+		Price uint      `view:"*"`
 	}
 	product := &Product{}
 	gormProduct := Convert(product, NewView("json", "gorm"))
