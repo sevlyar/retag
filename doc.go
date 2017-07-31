@@ -11,6 +11,8 @@
 //  - No memory allocations (for cached types);
 //  - Fast converting (lookup in table and pointer creation for cached types).
 //
-// The package requires go1.7+. The package is still experimental and subject to change.
+// The package requires go1.7+.
+//
+// The package is still experimental and subject to change. The package can be broken by a next release of go.
 //
 package retag
