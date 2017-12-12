@@ -73,7 +73,7 @@ var cache = struct {
 }
 
 func getType(structType reflect.Type, maker TagMaker) reflect.Type {
-	// TODO(yar): Improve syncronization for cases when one analogue
+	// TODO(yar): Improve synchronization for cases when one analogue
 	// is produced concurently by different goroutines in the same time
 	key := cacheKey{structType, maker}
 	cache.RLock()
