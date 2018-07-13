@@ -11,6 +11,8 @@ import (
 	"unsafe"
 )
 
+// TODO(yar): write tests on non-modified fields
+
 type maker struct{}
 
 func (m maker) MakeTag(t reflect.Type, fieldIndex int) reflect.StructTag {
@@ -137,7 +139,7 @@ func BenchmarkConvert(b *testing.B) {
 	b.Run("Cold", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			b.StopTimer()
-			cache.m = make(map[cacheKey]reflect.Type)
+			cache.m = make(map[cacheKey]result)
 			b.StartTimer()
 			Convert(p, maker{})
 		}

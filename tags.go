@@ -55,8 +55,8 @@ type TagMaker interface {
 func Convert(p interface{}, maker TagMaker) interface{} {
 	strPtrVal := reflect.ValueOf(p)
 	// TODO(yar): check type (pointer to the structure)
-	newType := getType(strPtrVal.Type().Elem(), maker)
-	newPtrVal := reflect.NewAt(newType, unsafe.Pointer(strPtrVal.Pointer()))
+	res := getType(strPtrVal.Type().Elem(), maker)
+	newPtrVal := reflect.NewAt(res.t, unsafe.Pointer(strPtrVal.Pointer()))
 	return newPtrVal.Interface()
 }
 
@@ -65,42 +65,63 @@ type cacheKey struct {
 	TagMaker
 }
 
-var cache = struct {
-	sync.RWMutex
-	m map[cacheKey]reflect.Type
-}{
-	m: make(map[cacheKey]reflect.Type),
+type result struct {
+	t reflect.Type
+	changed bool
 }
 
-func getType(structType reflect.Type, maker TagMaker) reflect.Type {
+var cache = struct {
+	sync.RWMutex
+	m map[cacheKey]result
+}{
+	m: make(map[cacheKey]result),
+}
+
+func getType(structType reflect.Type, maker TagMaker) result {
 	// TODO(yar): Improve synchronization for cases when one analogue
 	// is produced concurently by different goroutines in the same time
 	key := cacheKey{structType, maker}
 	cache.RLock()
-	t, ok := cache.m[key]
+	res, ok := cache.m[key]
 	cache.RUnlock()
 	if !ok {
-		t = makeType(structType, maker)
+		res = makeType(structType, maker)
 		cache.Lock()
-		cache.m[key] = t
+		cache.m[key] = res
 		cache.Unlock()
 	}
-	return t
+	return res
 }
 
-// TODO(yar): Optimize cases when type is not modified.
-func makeType(t reflect.Type, maker TagMaker) reflect.Type {
+func makeType(t reflect.Type, maker TagMaker) result {
 	switch t.Kind() {
 	case reflect.Struct:
 		return makeStructType(t, maker)
 	case reflect.Ptr:
-		return reflect.PtrTo(getType(t.Elem(), maker))
+		res := getType(t.Elem(), maker)
+		if !res.changed {
+			return result{t, false}
+		}
+		return result {reflect.PtrTo(res.t), true}
 	case reflect.Array:
-		return reflect.ArrayOf(t.Len(), getType(t.Elem(), maker))
+		res := getType(t.Elem(), maker)
+		if !res.changed {
+			return result{t, false}
+		}
+		return result {reflect.ArrayOf(t.Len(), res.t), true}
 	case reflect.Slice:
-		return reflect.SliceOf(getType(t.Elem(), maker))
+		res := getType(t.Elem(), maker)
+		if !res.changed {
+			return result{t, false}
+		}
+		return result {reflect.SliceOf(res.t), true}
 	case reflect.Map:
-		return reflect.MapOf(getType(t.Key(), maker), getType(t.Elem(), maker))
+		resKey := getType(t.Key(), maker)
+		resElem := getType(t.Elem(), maker)
+		if !resKey.changed && !resElem.changed{
+			return result{t, false}
+		}
+		return result{reflect.MapOf(resKey.t, resElem.t), true}
 	case
 		reflect.Chan,
 		reflect.Func,
@@ -109,13 +130,13 @@ func makeType(t reflect.Type, maker TagMaker) reflect.Type {
 		panic("tags.Map: Unsupported type: " + t.Kind().String())
 	default:
 		// don't modify type in another case
-		return t
+		return result{t, false}
 	}
 }
 
-func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
+func makeStructType(structType reflect.Type, maker TagMaker) result {
 	if structType.NumField() == 0 {
-		return structType
+		return result{structType, false}
 	}
 	changed := false
 	hasPrivate := false
@@ -124,9 +145,9 @@ func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 		strField := structType.Field(i)
 		if isExported(strField.Name) {
 			oldType := strField.Type
-			newType := getType(oldType, maker)
-			strField.Type = newType
-			if oldType != newType {
+			new := getType(oldType, maker)
+			strField.Type = new.t
+			if oldType != new.t {
 				changed = true
 			}
 			oldTag := strField.Tag
@@ -147,13 +168,13 @@ func makeStructType(structType reflect.Type, maker TagMaker) reflect.Type {
 		fields = append(fields, strField)
 	}
 	if !changed {
-		return structType
+		return result{structType, false}
 	} else if hasPrivate {
 		panic(fmt.Sprintf("unable to change tags for type %s, because it contains unexported fields", structType))
 	}
 	newType := reflect.StructOf(fields)
 	compareStructTypes(structType, newType)
-	return newType
+	return result{newType, true}
 }
 
 func isExported(name string) bool {
