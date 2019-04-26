@@ -113,6 +113,9 @@ func TestConvert(test *testing.T) {
 			Omit    int
 		}), maker{})
 	})
+	test.Run("Any", func(test *testing.T) {
+		ConvertAny(new(struct{ I interface{} }), maker{})
+	})
 }
 
 func shouldPanic(test *testing.T) {
