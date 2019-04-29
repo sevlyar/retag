@@ -66,6 +66,16 @@ type PrivateFieldsStruct struct {
 	XportTime time.Time
 }
 
+type FlatIFaceStruct struct {
+	Xport int
+	Data  interface{}
+}
+
+type IFaceStruct struct {
+	Xport1 int
+	Xport2 FlatIFaceStruct
+}
+
 var mapTestCases = []MapTestCase{
 	{"Void", maker{}, new(VoidStruct), `{}`},
 	{"Flat", maker{}, new(FlatStruct), `{"Xport":0}`},
@@ -79,6 +89,11 @@ var mapTestCases = []MapTestCase{
 	{"UnchangedUnexported", maker{}, new(PrivateFieldsStruct), `{"XportTime":"0001-01-01T00:00:00Z"}`},
 }
 
+var mapTestCasesAny = []MapTestCase{
+	{"FlatIFace", maker{}, new(FlatIFaceStruct), `{"Xport":0}`},
+	{"IFace", maker{}, new(IFaceStruct), `{"Xport1":0,"Xport2":{"Xport":0}}`},
+}
+
 type MapTestCase struct {
 	Name   string
 	Maker  TagMaker
@@ -88,6 +103,15 @@ type MapTestCase struct {
 
 func (c *MapTestCase) Run(test *testing.T) {
 	result := Convert(c.Source, c.Maker)
+	c.checkResult(result, test)
+}
+
+func (c *MapTestCase) RunAny(test *testing.T) {
+	result := ConvertAny(c.Source, c.Maker)
+	c.checkResult(result, test)
+}
+
+func (c *MapTestCase) checkResult(result interface{}, test *testing.T) {
 	b, err := json.Marshal(result)
 	if err != nil {
 		test.Fatal("Unable to marshal result into json: ", err)
@@ -113,9 +137,18 @@ func TestConvert(test *testing.T) {
 			Omit    int
 		}), maker{})
 	})
-	test.Run("Any", func(test *testing.T) {
-		ConvertAny(new(struct{ I interface{} }), maker{})
-	})
+}
+
+func TestConvertAny(test *testing.T) {
+	for _, testCase := range mapTestCasesAny {
+		test.Run(testCase.Name, testCase.RunAny)
+	}
+	for _, testCase := range mapTestCasesAny {
+		test.Run(testCase.Name, func(test *testing.T) {
+			defer shouldPanic(test)
+			testCase.Run(test)
+		})
+	}
 }
 
 func shouldPanic(test *testing.T) {

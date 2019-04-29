@@ -76,8 +76,9 @@ type cacheKey struct {
 }
 
 type result struct {
-	t       reflect.Type
-	changed bool
+	t        reflect.Type
+	changed  bool
+	hasIface bool
 }
 
 var cache = struct {
@@ -94,7 +95,7 @@ func getType(structType reflect.Type, maker TagMaker, any bool) result {
 	cache.RLock()
 	res, ok := cache.m[key]
 	cache.RUnlock()
-	if !ok {
+	if !ok || (res.hasIface && !any) {
 		res = makeType(structType, maker, any)
 		cache.Lock()
 		cache.m[key] = res
@@ -110,31 +111,31 @@ func makeType(t reflect.Type, maker TagMaker, any bool) result {
 	case reflect.Ptr:
 		res := getType(t.Elem(), maker, any)
 		if !res.changed {
-			return result{t, false}
+			return result{t: t, changed: false}
 		}
-		return result{reflect.PtrTo(res.t), true}
+		return result{t: reflect.PtrTo(res.t), changed: true}
 	case reflect.Array:
 		res := getType(t.Elem(), maker, any)
 		if !res.changed {
-			return result{t, false}
+			return result{t: t, changed: false}
 		}
-		return result{reflect.ArrayOf(t.Len(), res.t), true}
+		return result{t: reflect.ArrayOf(t.Len(), res.t), changed: true}
 	case reflect.Slice:
 		res := getType(t.Elem(), maker, any)
 		if !res.changed {
-			return result{t, false}
+			return result{t: t, changed: false}
 		}
-		return result{reflect.SliceOf(res.t), true}
+		return result{t: reflect.SliceOf(res.t), changed: true}
 	case reflect.Map:
 		resKey := getType(t.Key(), maker, any)
 		resElem := getType(t.Elem(), maker, any)
 		if !resKey.changed && !resElem.changed {
-			return result{t, false}
+			return result{t: t, changed: false}
 		}
-		return result{reflect.MapOf(resKey.t, resElem.t), true}
+		return result{t: reflect.MapOf(resKey.t, resElem.t), changed: true}
 	case reflect.Interface:
 		if any {
-			return result{t, false}
+			return result{t: t, changed: false, hasIface: true}
 		}
 		fallthrough
 	case
@@ -144,16 +145,17 @@ func makeType(t reflect.Type, maker TagMaker, any bool) result {
 		panic("tags.Map: Unsupported type: " + t.Kind().String())
 	default:
 		// don't modify type in another case
-		return result{t, false}
+		return result{t: t, changed: false}
 	}
 }
 
 func makeStructType(structType reflect.Type, maker TagMaker, any bool) result {
 	if structType.NumField() == 0 {
-		return result{structType, false}
+		return result{t: structType, changed: false}
 	}
 	changed := false
 	hasPrivate := false
+	hasIface := false
 	fields := make([]reflect.StructField, 0, structType.NumField())
 	for i := 0; i < structType.NumField(); i++ {
 		strField := structType.Field(i)
@@ -163,6 +165,9 @@ func makeStructType(structType reflect.Type, maker TagMaker, any bool) result {
 			strField.Type = new.t
 			if oldType != new.t {
 				changed = true
+			}
+			if new.hasIface {
+				hasIface = true
 			}
 			oldTag := strField.Tag
 			newTag := maker.MakeTag(structType, i)
@@ -182,13 +187,13 @@ func makeStructType(structType reflect.Type, maker TagMaker, any bool) result {
 		fields = append(fields, strField)
 	}
 	if !changed {
-		return result{structType, false}
+		return result{t: structType, changed: false, hasIface: hasIface}
 	} else if hasPrivate {
 		panic(fmt.Sprintf("unable to change tags for type %s, because it contains unexported fields", structType))
 	}
 	newType := reflect.StructOf(fields)
 	compareStructTypes(structType, newType)
-	return result{newType, true}
+	return result{t: newType, changed: true, hasIface: hasIface}
 }
 
 func isExported(name string) bool {
